@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import './login-screen.js';
+import './registration-screen.js';
 
 const logo = new URL('../assets/open-wc-logo.svg', import.meta.url).href;
 
@@ -8,6 +9,7 @@ class DummyApplication extends LitElement {
     header: { type: String },
     isLoggedIn: { type: Boolean },
     currentUser: { type: String },
+    activeView: { type: String },
   }
 
   static styles = css`
@@ -43,6 +45,31 @@ class DummyApplication extends LitElement {
     .navbar-brand img {
       width: 32px;
       height: 32px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .nav-link {
+      background: none;
+      border: none;
+      color: #475569;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: color 0.2s, background-color 0.2s;
+    }
+
+    .nav-link:hover,
+    .nav-link[aria-current='page'] {
+      color: #1d4ed8;
+      background-color: rgba(29, 78, 216, 0.16);
+      font-weight: 700;
     }
 
     .navbar-login {
@@ -123,6 +150,12 @@ class DummyApplication extends LitElement {
       margin: 2rem auto;
     }
 
+    .register-container {
+      width: 100%;
+      max-width: 460px;
+      margin: 2rem auto;
+    }
+
     .welcome-content {
       display: flex;
       flex-direction: column;
@@ -153,10 +186,6 @@ class DummyApplication extends LitElement {
     .app-footer a {
       margin-left: 5px;
       color: #2563eb;
-      text-decoration: none;
-    }
-
-    .app-footer a:hover {
       text-decoration: underline;
     }
   `;
@@ -166,6 +195,7 @@ class DummyApplication extends LitElement {
     this.header = 'My app';
     this.isLoggedIn = false;
     this.currentUser = '';
+    this.activeView = 'home';
   }
 
   render() {
@@ -174,6 +204,28 @@ class DummyApplication extends LitElement {
         <div class="navbar-brand">
           <img alt="open-wc logo" src=${logo} />
           ${this.header}
+        </div>
+        <div class="nav-links">
+          <button
+            class="nav-link"
+            type="button"
+            aria-current=${this.activeView === 'home' ? 'page' : 'false'}
+            @click=${this._goHome}
+          >
+            Home
+          </button>
+          ${this.isLoggedIn
+            ? null
+            : html`
+                <button
+                  class="nav-link"
+                  type="button"
+                  aria-current=${this.activeView === 'register' ? 'page' : 'false'}
+                  @click=${this._openRegistration}
+                >
+                  Register
+                </button>
+              `}
         </div>
         <div class="navbar-login">
           ${this.isLoggedIn
@@ -186,16 +238,16 @@ class DummyApplication extends LitElement {
                 </button>
               `
             : html`
-                <button 
-                  class="login-btn" 
+                <button
+                  class="login-btn"
                   popovertarget="login-popover"
                   type="button"
                 >
                   Sign In
                 </button>
-                <div 
-                  id="login-popover" 
-                  popover="auto" 
+                <div
+                  id="login-popover"
+                  popover="auto"
                   class="login-popover"
                 >
                   <login-screen
@@ -203,7 +255,7 @@ class DummyApplication extends LitElement {
                     @login-submit=${this._handleLogin}
                   >
                     <a slot="helper" href="#">Forgot password?</a>
-                    <a slot="action" href="#">Create account</a>
+                    <a slot="action" href="#" @click=${this._openRegistration}>Create account</a>
                   </login-screen>
                 </div>
               `}
@@ -216,7 +268,10 @@ class DummyApplication extends LitElement {
               <div class="welcome-content">
                 <div class="logo"><img alt="open-wc logo" src=${logo} /></div>
                 <h1>Welcome to ${this.header}!</h1>
-                <p>You are successfully logged in as <strong>${this.currentUser}</strong></p>
+                <p>
+                  You are successfully logged in as
+                  <strong>${this.currentUser}</strong>
+                </p>
                 <p>Edit <code>src/DummyApplication.js</code> and save to reload.</p>
                 <a
                   class="app-link"
@@ -228,13 +283,24 @@ class DummyApplication extends LitElement {
                 </a>
               </div>
             `
-          : html`
-              <div class="welcome-content">
-                <div class="logo"><img alt="open-wc logo" src=${logo} /></div>
-                <h1>Welcome to ${this.header}</h1>
-                <p>Please sign in using the form in the navigation bar above.</p>
-              </div>
-            `}
+          : this.activeView === 'register'
+            ? html`
+                <div class="register-container">
+                  <registration-screen
+                    heading="Create your account"
+                    @register-submit=${this._handleRegister}
+                  >
+                    <a slot="action" href="#" @click=${this._goHome}>Back to sign in</a>
+                  </registration-screen>
+                </div>
+              `
+            : html`
+                <div class="welcome-content">
+                  <div class="logo"><img alt="open-wc logo" src=${logo} /></div>
+                  <h1>Welcome to ${this.header}</h1>
+                  <p>Please sign in using the form in the navigation bar above.</p>
+                </div>
+              `}
       </main>
 
       <p class="app-footer">
@@ -251,26 +317,56 @@ class DummyApplication extends LitElement {
 
   _handleLogin(event) {
     const { email, password } = event.detail;
-    
-    // Simple validation for demo purposes
+
     if (email && password.length >= 8) {
       this.isLoggedIn = true;
       this.currentUser = email;
-      
-      // Close the popover after successful login
-      const popover = this.shadowRoot.getElementById('login-popover');
-      if (popover) {
-        popover.hidePopover();
-      }
+      this.activeView = 'home';
+      this._hideLoginPopover();
     } else {
-      // In a real app, you'd handle this through the login-screen component
       console.warn('Login failed: Invalid credentials');
+    }
+  }
+
+  _handleRegister(event) {
+    const { username, password } = event.detail;
+
+    if (username && password.length >= 8) {
+      this.isLoggedIn = true;
+      this.currentUser = username;
+      this.activeView = 'home';
+      this._hideLoginPopover();
+    } else {
+      console.warn('Registration failed: Invalid details');
     }
   }
 
   _handleLogout() {
     this.isLoggedIn = false;
     this.currentUser = '';
+    this.activeView = 'home';
+  }
+
+  _openRegistration(event) {
+    event?.preventDefault();
+    if (this.isLoggedIn) {
+      return;
+    }
+    this.activeView = 'register';
+    this._hideLoginPopover();
+  }
+
+  _goHome(event) {
+    event?.preventDefault();
+    this.activeView = 'home';
+    this._hideLoginPopover();
+  }
+
+  _hideLoginPopover() {
+    const popover = this.shadowRoot?.getElementById('login-popover');
+    if (popover && typeof popover.hidePopover === 'function') {
+      popover.hidePopover();
+    }
   }
 }
 
