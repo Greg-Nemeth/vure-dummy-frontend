@@ -6,6 +6,27 @@ set -e
 echo "🚀 Starting frontend application and OWASP ZAP scanner..."
 echo ""
 
+if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ Docker CLI not found on PATH. Install Docker first."
+    exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    cat <<'EOF'
+❌ Cannot talk to the Docker daemon as the current user.
+
+To run this script without sudo, add yourself to the docker group:
+  sudo usermod -aG docker $USER
+  newgrp docker  # or log out and back in
+Then rerun this script.
+EOF
+    exit 1
+fi
+
+REPORT_DIR="zap-reports"
+mkdir -p "$REPORT_DIR"
+chmod 777 "$REPORT_DIR"
+
 # Build and start the frontend
 echo "📦 Building frontend container..."
 docker compose build frontend
@@ -39,14 +60,27 @@ echo "🔍 Running OWASP ZAP vulnerability scan..."
 echo "This may take a few minutes..."
 echo ""
 
+set +e
 docker compose up zap
+scan_status=$?
+set -e
+
+if [ "$scan_status" -ne 0 ] && [ "$scan_status" -ne 2 ]; then
+    echo "❌ OWASP ZAP scan failed (exit code $scan_status)"
+    docker compose logs zap
+    exit "$scan_status"
+fi
 
 # Check scan results
 echo ""
-echo "📊 Scan complete! Results saved in ./zap-reports/"
+echo "📊 Scan complete! Results saved in ./$REPORT_DIR/"
 echo ""
-echo "Reports generated:"
-ls -lh zap-reports/
+if ls "$REPORT_DIR"/zap-report.* >/dev/null 2>&1; then
+    echo "Reports generated:"
+    ls -lh "$REPORT_DIR"/zap-report.*
+else
+    echo "⚠️  No report files were generated."
+fi
 
 # Cleanup
 echo ""
