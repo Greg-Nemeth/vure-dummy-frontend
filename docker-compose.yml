@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Frontend application with mock server
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # OWASP ZAP scanner
+  zap:
+    image: zaproxy/zap-stable
+    container_name: zap-scanner
+    networks:
+      - app-network
+    volumes:
+      - ./zap-reports:/zap/wrk:rw
+    command: >
+      zap-baseline.py 
+      -t http://frontend:8000 
+      -r zap-report.html
+      -J zap-report.json
+      -w zap-report.md
+      -d
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
