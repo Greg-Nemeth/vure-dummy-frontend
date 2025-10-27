@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import './login-screen.js';
 import './registration-screen.js';
+import { login, register } from './services/auth-service.js';
 
 const logo = new URL('../assets/open-wc-logo.svg', import.meta.url).href;
 
@@ -10,6 +11,9 @@ class DummyApplication extends LitElement {
     isLoggedIn: { type: Boolean },
     currentUser: { type: String },
     activeView: { type: String },
+    loginError: { type: String },
+    registerError: { type: String },
+    authLoading: { type: Boolean },
   }
 
   static styles = css`
@@ -196,6 +200,9 @@ class DummyApplication extends LitElement {
     this.isLoggedIn = false;
     this.currentUser = '';
     this.activeView = 'home';
+    this.loginError = '';
+    this.registerError = '';
+    this.authLoading = false;
   }
 
   render() {
@@ -252,6 +259,7 @@ class DummyApplication extends LitElement {
                 >
                   <login-screen
                     heading="Sign In"
+                    .errorMessage=${this.loginError}
                     @login-submit=${this._handleLogin}
                   >
                     <a slot="helper" href="#">Forgot password?</a>
@@ -288,6 +296,7 @@ class DummyApplication extends LitElement {
                 <div class="register-container">
                   <registration-screen
                     heading="Create your account"
+                    .errorMessage=${this.registerError}
                     @register-submit=${this._handleRegister}
                   >
                     <a slot="action" href="#" @click=${this._goHome}>Back to sign in</a>
@@ -315,29 +324,40 @@ class DummyApplication extends LitElement {
     `;
   }
 
-  _handleLogin(event) {
+  async _handleLogin(event) {
     const { email, password } = event.detail;
+    this.loginError = '';
+    this.authLoading = true;
 
-    if (email && password.length >= 8) {
+    try {
+      const { user } = await login({ email, password });
       this.isLoggedIn = true;
-      this.currentUser = email;
+      this.currentUser = user?.email ?? email;
       this.activeView = 'home';
       this._hideLoginPopover();
-    } else {
-      console.warn('Login failed: Invalid credentials');
+    } catch (error) {
+      this.loginError = error.message || 'Unable to sign in right now.';
+    } finally {
+      this.authLoading = false;
     }
   }
 
-  _handleRegister(event) {
+  async _handleRegister(event) {
     const { username, password } = event.detail;
+    this.registerError = '';
+    this.authLoading = true;
 
-    if (username && password.length >= 8) {
+    try {
+      const { user } = await register({ username, password });
       this.isLoggedIn = true;
-      this.currentUser = username;
+      this.currentUser = user?.email ?? username;
       this.activeView = 'home';
+      this.loginError = '';
       this._hideLoginPopover();
-    } else {
-      console.warn('Registration failed: Invalid details');
+    } catch (error) {
+      this.registerError = error.message || 'Unable to create account at the moment.';
+    } finally {
+      this.authLoading = false;
     }
   }
 
@@ -345,6 +365,8 @@ class DummyApplication extends LitElement {
     this.isLoggedIn = false;
     this.currentUser = '';
     this.activeView = 'home';
+    this.loginError = '';
+    this.registerError = '';
   }
 
   _openRegistration(event) {
@@ -354,12 +376,14 @@ class DummyApplication extends LitElement {
     }
     this.activeView = 'register';
     this._hideLoginPopover();
+    this.registerError = '';
   }
 
   _goHome(event) {
     event?.preventDefault();
     this.activeView = 'home';
     this._hideLoginPopover();
+    this.registerError = '';
   }
 
   _hideLoginPopover() {

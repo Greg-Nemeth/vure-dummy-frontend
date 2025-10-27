@@ -24,6 +24,13 @@ npm init @open-wc
 - `lint` runs the linter for your project
 - `format` fixes linting and formatting errors
 
+## Mock API workflow
+
+- The dev server (`npm start`) automatically spins up a [Mock Service Worker](https://mswjs.io) instance. Requests to `/api/login` and `/api/register` are intercepted and resolved with the mocks declared in `src/mocks/handlers.js`.
+- Update or extend the handlers in that file to model additional endpoints. State is stored in-memory, so restarting the dev server resets the mock database.
+- Unit tests stub `fetch` per scenario, so they remain deterministic; browser-based manual testing continues to rely on MSW.
+- The generated `mockServiceWorker.js` file lives at the project root. Make sure it is served alongside `index.html` when previewing the built app.
+
 ## Tooling configs
 
 For most of the tools, the configuration is in the `package.json` to reduce the amount of files in your project.
