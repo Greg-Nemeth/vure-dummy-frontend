@@ -9,7 +9,7 @@ export const handlers = [
     const { email, password } = await request.json();
     const user = USERS.get(email);
 
-    if (user && user.password === password) {
+    if (user) {
       return HttpResponse.json({
         user: { email },
         token: 'mock-token-123',
