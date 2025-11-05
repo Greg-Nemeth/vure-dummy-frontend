@@ -32,13 +32,9 @@ services:
       - app-network
     volumes:
       - ./zap-reports:/zap/wrk:rw
+      - ./zap-automation.yaml:/zap/wrk/zap-automation.yaml:ro
     command: >
-      zap-baseline.py 
-      -t http://frontend:8000 
-      -r zap-report.html
-      -J zap-report.json
-      -w zap-report.md
-      -d
+      zap.sh -cmd -autorun /zap/wrk/zap-automation.yaml
     depends_on:
       frontend:
         condition: service_healthy
