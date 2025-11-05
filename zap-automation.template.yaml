@@ -1,0 +1,98 @@
+---
+env:
+  contexts:
+    - name: "dummy-app"
+      urls:
+        - "http://frontend:8000"
+      includePaths:
+        - "http://frontend:8000.*"
+      authentication:
+        method: "json"
+        parameters:
+          loginRequestUrl: "http://frontend:8000/api/login"
+          loginRequestBody: '{"email":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}'
+        verification:
+          method: "response"
+          loggedInRegex: '"token":'
+          loggedOutRegex: '"message":'
+      sessionManagement:
+        method: "cookie"
+      users:
+        - name: "testuser"
+          credentials:
+            username: "${ZAP_USERNAME}"
+            password: "${ZAP_PASSWORD}"
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: passiveScan-config
+    parameters:
+      enableTags: false
+      maxAlertsPerRule: 10
+    name: "passive-scan-config"
+
+  - type: requestor
+    requests:
+      - url: "http://frontend:8000/api/register"
+        method: "POST"
+        data: '{"username":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}'
+        headers:
+          - "Content-Type: application/json"
+    name: "register-user"
+
+  - type: spider
+    parameters:
+      context: "dummy-app"
+      url: "http://frontend:8000"
+      maxDuration: 3
+      user: "testuser"
+      handleParameters: "USE_ALL"
+    name: "traditional-spider"
+
+  - type: spiderAjax
+    parameters:
+      context: "dummy-app"
+      url: "http://frontend:8000"
+      user: "testuser"
+      maxDuration: 3
+      maxCrawlDepth: 3
+    name: "ajax-spider"
+
+  - type: activeScan
+    parameters:
+      context: "dummy-app"
+      user: "testuser"
+      policy: "Default Policy"
+      maxRuleDurationInMins: 5
+      maxScanDurationInMins: 15
+    name: "active-scan"
+
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk/"
+      reportFile: "zap-report.html"
+      reportTitle: "ZAP Security Report"
+      reportDescription: "Security scan of dummy application with authentication"
+    name: "html-report"
+
+  - type: report
+    parameters:
+      template: "traditional-json"
+      reportDir: "/zap/wrk/"
+      reportFile: "zap-report.json"
+      reportTitle: "ZAP Security Report"
+      reportDescription: "Security scan of dummy application with authentication"
+    name: "json-report"
+
+  - type: report
+    parameters:
+      template: "traditional-md"
+      reportDir: "/zap/wrk/"
+      reportFile: "zap-report.md"
+      reportTitle: "ZAP Security Report"
+      reportDescription: "Security scan of dummy application with authentication"
+    name: "md-report"
