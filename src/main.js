@@ -5,6 +5,7 @@ async function bootstrap() {
   }
 
   await import('./dummy-application.js');
+  await import('./vulnerable-display.js');
 }
 
 bootstrap();

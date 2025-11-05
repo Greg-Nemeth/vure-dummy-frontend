@@ -280,6 +280,8 @@ class DummyApplication extends LitElement {
                   You are successfully logged in as
                   <strong>${this.currentUser}</strong>
                 </p>
+                <vulnerable-display .userInput=${this.currentUser}></vulnerable-display>
+
                 <p>Edit <code>src/DummyApplication.js</code> and save to reload.</p>
                 <a
                   class="app-link"
