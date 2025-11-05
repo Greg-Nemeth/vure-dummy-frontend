@@ -142,13 +142,13 @@ export class LoginScreen extends LitElement {
         <form aria-labelledby="login-heading" @submit=${this._handleSubmit}>
           <div class="inputs">
             <label for="email">
-              Email address
+              Username
               <input
                 id="email"
                 name="email"
-                type="email"
-                autocomplete="email"
-                placeholder="you@example.com"
+                type="text"
+                autocomplete="username"
+                placeholder="Enter your username"
                 .value=${this.email}
                 required
                 @input=${this._handleInput}

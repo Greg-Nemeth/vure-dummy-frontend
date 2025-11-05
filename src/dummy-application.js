@@ -4,6 +4,7 @@ import './registration-screen.js';
 import { login, register } from './services/auth-service.js';
 
 const logo = new URL('../assets/open-wc-logo.svg', import.meta.url).href;
+const AUTH_COOKIE_NAME = 'auth_user';
 
 class DummyApplication extends LitElement {
   static properties = {
@@ -205,6 +206,11 @@ class DummyApplication extends LitElement {
     this.authLoading = false;
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._restoreSessionFromCookie();
+  }
+
   render() {
     return html`
       <nav class="navbar">
@@ -369,6 +375,7 @@ class DummyApplication extends LitElement {
     this.activeView = 'home';
     this.loginError = '';
     this.registerError = '';
+    this._clearAuthCookie();
   }
 
   _openRegistration(event) {
@@ -393,6 +400,37 @@ class DummyApplication extends LitElement {
     if (popover && typeof popover.hidePopover === 'function') {
       popover.hidePopover();
     }
+  }
+
+  _restoreSessionFromCookie() {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const cookieValue = this._readCookie(AUTH_COOKIE_NAME);
+    if (cookieValue) {
+      this.isLoggedIn = true;
+      this.currentUser = cookieValue;
+    }
+  }
+
+  _clearAuthCookie() {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    document.cookie = `${AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
+  }
+
+  _readCookie(name) {
+    if (typeof document === 'undefined') {
+      return '';
+    }
+    const cookies = document.cookie ? document.cookie.split('; ') : [];
+    for (const entry of cookies) {
+      if (entry.startsWith(`${name}=`)) {
+        return decodeURIComponent(entry.slice(name.length + 1));
+      }
+    }
+    return '';
   }
 }
 

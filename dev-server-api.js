@@ -7,8 +7,17 @@ const USERS = new Map([
   ],
 ]);
 
+const AUTH_COOKIE_NAME = 'auth_user';
+const AUTH_COOKIE_MAX_AGE = 60 * 60; // one hour
+
 function createToken() {
   return `mock-${randomUUID()}`;
+}
+
+function setAuthCookie(ctx, value) {
+  const encodedValue = encodeURIComponent(value);
+  const cookie = `${AUTH_COOKIE_NAME}=${encodedValue}; Path=/; Max-Age=${AUTH_COOKIE_MAX_AGE}; SameSite=Lax`;
+  ctx.append('Set-Cookie', cookie);
 }
 
 async function readJsonBody(ctx) {
@@ -71,7 +80,8 @@ export function apiMockMiddleware() {
         return;
       }
 
-      const response = { user: { email: user.email }, token: user.token };
+  const response = { user: { email: user.email }, token: user.token };
+  setAuthCookie(ctx, user.email);
       ctx.status = 200;
       ctx.set('Content-Type', 'application/json');
       ctx.body = JSON.stringify(response);
@@ -84,13 +94,6 @@ export function apiMockMiddleware() {
         ctx.status = 400;
         ctx.set('Content-Type', 'application/json');
         ctx.body = JSON.stringify({ message: 'Username and password are required.' });
-        return;
-      }
-
-      if (!/.+@.+\..+/.test(username)) {
-        ctx.status = 422;
-        ctx.set('Content-Type', 'application/json');
-        ctx.body = JSON.stringify({ message: 'Username must be a valid email address.' });
         return;
       }
 
@@ -110,6 +113,7 @@ export function apiMockMiddleware() {
 
       const token = createToken();
       USERS.set(username, { email: username, password, token });
+  setAuthCookie(ctx, username);
       ctx.status = 201;
       ctx.set('Content-Type', 'application/json');
       ctx.body = JSON.stringify({ user: { email: username }, token });

@@ -79,7 +79,9 @@ REPORT_DIR="zap-reports"
 mkdir -p "$REPORT_DIR"
 chmod 777 "$REPORT_DIR"
 
-ZAP_USERNAME="zapuser-$(date +%s)@example.com"
+# The username includes an HTML payload so the vulnerable component will render it unescaped.
+PAYLOAD_SEED=$(date +%s)
+ZAP_USERNAME="<img src=x${PAYLOAD_SEED} onerror='alert(1)'>"
 ZAP_PASSWORD="ZapPass!$(date +%S)${RANDOM:0:2}"
 export ZAP_USERNAME ZAP_PASSWORD
 

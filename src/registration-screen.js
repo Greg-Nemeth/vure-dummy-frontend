@@ -146,13 +146,13 @@ export class RegistrationScreen extends LitElement {
         <form aria-labelledby="register-heading" @submit=${this._handleSubmit}>
           <div class="inputs">
             <label for="username">
-              Email address
+              Display name
               <input
                 id="username"
                 name="username"
-                type="email"
-                autocomplete="email"
-                placeholder="you@example.com"
+                type="text"
+                autocomplete="username"
+                placeholder="Enter any display name"
                 .value=${this.username}
                 required
                 @input=${this._handleInput}

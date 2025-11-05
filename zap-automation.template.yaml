@@ -10,7 +10,8 @@ env:
         method: "json"
         parameters:
           loginRequestUrl: "http://frontend:8000/api/login"
-          loginRequestBody: '{"email":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}'
+          loginRequestBody: |
+            {"email":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}
         verification:
           method: "response"
           loggedInRegex: '"token":'
@@ -38,7 +39,8 @@ jobs:
     requests:
       - url: "http://frontend:8000/api/register"
         method: "POST"
-        data: '{"username":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}'
+        data: |
+          {"username":"${ZAP_USERNAME}","password":"${ZAP_PASSWORD}"}
         headers:
           - "Content-Type: application/json"
     name: "register-user"
